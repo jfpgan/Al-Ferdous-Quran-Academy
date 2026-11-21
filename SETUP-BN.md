@@ -1,68 +1,65 @@
-# Al-Ferdous Quran Academy — Supabase ও Admin Dashboard সেটআপ
+# Al-Ferdous Quran Academy: অ্যাডমিন প্যানেল সেটআপ গাইড (Supabase + Netlify)
 
-এই গাইডটি `admin/` প্যানেল, ওয়েবসাইটের CMS, ভর্তি/ফ্রি-ট্রায়াল আবেদন এবং ছবি আপলোড চালু করার জন্য।
+এই গাইডে আপনি একটি বিনামূল্যের Supabase প্রজেক্ট খুলবেন, ডাটাবেস তৈরি করবেন, নিজের অ্যাডমিন অ্যাকাউন্ট বানাবেন এবং Netlify-র সাথে যুক্ত করবেন।
+**আপনার পাসওয়ার্ড বা গোপন কী কাউকে (আমাকেও) দেবেন না।** শুধু নিজের Supabase ও Netlify-তে বসাবেন।
 
-## ১. Supabase প্রজেক্ট যাচাই
+## সংক্ষেপে কীভাবে কাজ করে
+- সাইট (Netlify) → দর্শকের কাছে **প্রকাশিত কনটেন্ট** Supabase থেকে এনে দেখায়।
+- অ্যাডমিন প্যানেল (`আপনার-সাইট/admin/`) → Supabase Auth দিয়ে লগইন, সব বদল ডাটাবেসে সেভ, ছবি Supabase Storage-এ।
+- নিরাপত্তা Row Level Security (RLS) দিয়ে সার্ভারেই যাচাই হয়। অ্যাডমিন ছাড়া কেউ কিছু বদলাতে পারে না।
 
-প্রজেক্টের Dashboard খুলুন। `js/cms-config.js` ফাইলে বর্তমানে Project URL হিসেবে `https://bjszmkibprjcdhgkljqu.supabase.co` দেওয়া আছে। আপনার Supabase প্রজেক্টের URL-এর সঙ্গে এটি হুবহু মিলতে হবে। URL আলাদা হলে ওই ফাইলের `url` মানটি আপনার Project URL দিয়ে বদলাবেন।
+## ধাপ ১: Supabase অ্যাকাউন্ট ও প্রজেক্ট
+1. https://supabase.com এ যান → **Start your project** → GitHub বা ইমেইল দিয়ে সাইন আপ।
+2. **New project** চাপুন। Name: `al-ferdous`। **Database Password** একটি শক্ত পাসওয়ার্ড দিন (নিজে সংরক্ষণ করে রাখুন, এটি কোথাও আমাদের লাগবে না)। Region: আপনার নিকটতম (যেমন Singapore)।
+3. কয়েক মিনিট অপেক্ষা করুন, প্রজেক্ট তৈরি হবে।
 
-## ২. Database তৈরি
+## ধাপ ২: ডাটাবেস তৈরি
+1. বাম মেনু → **SQL Editor** → **New query**।
+2. এই প্যাকেজের `supabase/schema.sql` ফাইলটি খুলে সব লেখা কপি করে পেস্ট করুন।
+3. একদম নিচের লাইনে `YOUR-ADMIN-EMAIL@example.com` মুছে **আপনি যে ইমেইল দিয়ে লগইন করবেন সেটি** লিখুন।
+4. **Run** চাপুন। “Success” দেখালে হয়েছে।
 
-1. Supabase Dashboard → **SQL Editor** খুলুন।
-2. প্রজেক্টের `schema.sql` ফাইলটি খুলে সম্পূর্ণ SQL কপি করুন।
-3. SQL-এর একদম শেষের `alferdousquranacademy.info@gmail.com` জায়গায় আপনার Admin লগইন ইমেইল বসান। ইমেইলটি অবশ্যই সেই ইমেইল হবে যা দিয়ে Supabase Auth-এ লগইন করবেন।
-4. পুরো SQL একবার Run করুন। সফল হলে `admins`, `site_content`, `content_versions`, `applications` টেবিল এবং `media` Storage bucket তৈরি হবে।
+## ধাপ ৩: আপনার অ্যাডমিন ইউজার
+1. বাম মেনু → **Authentication** → **Users** → **Add user** → **Create new user**।
+2. ধাপ ২-এর **একই ইমেইল** ও একটি শক্ত পাসওয়ার্ড (কমপক্ষে ১০ অক্ষর) দিন। **Auto Confirm User** টিক দিন। **Create user**।
+3. **Authentication → Sign In / Providers (বা Settings)** এ গিয়ে **Allow new users to sign up** বন্ধ করুন (Disable signups)। এতে অন্য কেউ অ্যাকাউন্ট খুলতে পারবে না।
 
-**গুরুত্বপূর্ণ:** একই SQL বারবার চালানোর আগে বুঝে নিন—এটি প্রথমবারের database setup-এর জন্য।
+## ধাপ ৪: দুটি পাবলিক তথ্য সংগ্রহ
+**Project Settings → API** পেজে দেখবেন:
+- **Project URL** (আপনার: `https://bjszmkibprjcdhgkljqu.supabase.co`)
+- **anon public** (বা Publishable) কী। এটি জনসমক্ষে থাকার জন্যই বানানো, সমস্যা নেই।
+- ⚠ **service_role / secret কী কখনো কোথাও বসাবেন না।** এই সাইটে এটি লাগেই না।
 
-## ৩. Admin Auth user তৈরি
+## ধাপ ৫: Netlify-তে সংযোগ
+1. Netlify → আপনার সাইট → **Site configuration → Environment variables → Add a variable**:
+   - `SUPABASE_URL` = ধাপ ৪-এর Project URL
+   - `SUPABASE_ANON_KEY` = ধাপ ৪-এর anon public কী
+2. সাইট GitHub থেকে ডিপ্লয় হলে `netlify.toml` অনুযায়ী Netlify নিজেই ডিপ্লয়ের সময় `js/cms-config.js` বানিয়ে নেবে।
+   (ZIP সরাসরি Netlify-তে ড্র্যাগ করলে Environment Variables কাজ করে না। তখন `js/cms-config.js` খুলে নিজের URL ও anon কী কোটের ভেতরে বসান।)
+3. **Deploys → Trigger deploy → Deploy site**।
 
-1. Supabase → **Authentication → Users → Add user → Create new user** খুলুন।
-2. SQL-এ দেওয়া একই ইমেইল লিখুন এবং শক্তিশালী পাসওয়ার্ড দিন।
-3. **Auto Confirm User** নির্বাচন করে user তৈরি করুন।
-4. যদি SQL-এর শেষের Admin email আগে না বদলে Run করে থাকেন, SQL Editor-এ শেষের `insert into public.admins...` লাইনটি সঠিক ইমেইল দিয়ে চালান।
+## ধাপ ৬: পাসওয়ার্ড রিসেট লিংক চালু করা
+Supabase → **Authentication → URL Configuration**:
+- **Site URL** = আপনার সাইটের ঠিকানা (যেমন `https://আপনার-ডোমেইন`)
+- **Redirect URLs** এ যোগ করুন: `https://আপনার-ডোমেইন/admin/`
 
-## ৪. Public key ওয়েবসাইটে বসান
+## ধাপ ৭: প্রথম লগইন
+`https://আপনার-ডোমেইন/admin/` খুলুন → ইমেইল ও পাসওয়ার্ড দিন। “পেজ এডিটর”-এ লেখায় ক্লিক করে বদলান → “খসড়া সেভ” → **“প্রকাশ করুন (Publish)”** → আপনার সাইট খুলে দেখুন।
 
-1. Supabase → **Project Settings → API** (কিছু Dashboard-এ API Keys) খুলুন।
-2. **Project URL** এবং **anon/public** অথবা **publishable** key কপি করুন।
-3. প্রজেক্টের `js/cms-config.js` ফাইল খুলুন।
-4. এই লাইনে আপনার তথ্য বসান:
+## পরীক্ষা তালিকা (প্রথমবার চালিয়ে দেখুন)
+1. হিরো শিরোনাম বদলে প্রকাশ → লাইভ সাইটে দেখা যায়?
+2. লোগো বা একটি ছবি বদলান → দেখা যায়?
+3. একটি FAQ/কার্ড কপি করে লেখা বদলান → দেখা যায়?
+4. একটি ভিডিও লিংক বদলান → গ্যালারিতে বদলায়?
+5. ফ্রি ট্রায়াল ফর্ম নিজে পাঠান → “ভর্তির আবেদন” ট্যাবে আসে?
+6. লগআউট করে `/admin/` আবার খুলুন → পাসওয়ার্ড চায়?
 
-```js
-window.AF_CMS_CONFIG = {
-  url: "https://bjszmkibprjcdhgkljqu.supabase.co",
-  anonKey: "sb_publishable_eWa6dfD0AEozjWKqImsgEw_Xl3qEjCC"
-};
-```
+## ব্যাকআপ
+- অ্যাডমিন → **ব্যাকআপ** → “ব্যাকআপ ডাউনলোড” (কনটেন্ট, ভার্সন ও আবেদন JSON ফাইলে)।
+- Supabase নিজেও দৈনিক ব্যাকআপ রাখে (Project → Database → Backups; ফ্রি প্ল্যানে সীমিত)।
 
-`anon`/`publishable` key ব্রাউজারে ব্যবহারের জন্য। **কখনো `service_role` বা secret key এখানে বসাবেন না, GitHub-এ দেবেন না, কিংবা কাউকে পাঠাবেন না।** Database-এর Row Level Security (RLS) নীতিই public key-সহ অননুমোদিত ব্যবহার সীমিত রাখে।
-
-## ৫. সাইট Deploy ও Admin login
-
-1. পরিবর্তিত ফাইলগুলো আপনার GitHub repository-তে commit/push করুন অথবা Netlify-তে নতুন deploy দিন।
-2. Deploy শেষ হলে খুলুন: `https://YOUR-SITE-DOMAIN/admin/`
-3. Supabase Auth-এ তৈরি করা Admin email ও password দিয়ে লগইন করুন।
-4. Dashboard-এ **পেজ এডিটর**, **ভিডিও**, **যোগাযোগ ও লিংক**, **ডিজাইন**, **ভর্তির আবেদন**, **মিডিয়া লাইব্রেরি**, **ভার্সন ইতিহাস** ইত্যাদি ব্যবহার করুন।
-5. পরিবর্তনের পর আগে **খসড়া সেভ**, তারপর লাইভ করতে **প্রকাশ করুন (Publish)** চাপুন।
-
-## ৬. কীভাবে কাজ করবে
-
-- Public website শুধু `published` content পড়বে।
-- Admin-এর draft আলাদা থাকবে; Publish না করা পর্যন্ত লাইভ সাইট বদলাবে না।
-- ফ্রি-ট্রায়াল ফর্ম WhatsApp-এ বার্তা তৈরি/খোলার পাশাপাশি Supabase-এ আবেদন সংরক্ষণের চেষ্টা করে।
-- Admin panel-এ আবেদন দেখা, status বদলানো এবং CSV export করার সুবিধা আছে।
-- ছবি `media` public bucket-এ রাখা হয়, যাতে ওয়েবসাইটে public image URL দিয়ে দেখা যায়; upload/list/delete কাজ Admin permission-এর অধীনে।
-
-## ৭. নিরাপত্তা ও সমস্যা সমাধান
-
-- `service_role`/secret key কখনো frontend-এ ব্যবহার করবেন না।
-- Admin account-এ শক্তিশালী, অন্য কোথাও ব্যবহার না করা password ব্যবহার করুন।
-- Admin login-এ “এই ইমেইলের অ্যাডমিন অনুমতি নেই” এলে Auth user email এবং `public.admins` টেবিলের email একই কি না দেখুন।
-- “Invalid API key”/401 এলে `js/cms-config.js`-এর URL ও anon/publishable key যাচাই করুন।
-- 403 এলে SQL Editor-এ schema/policies সফলভাবে তৈরি হয়েছে কি না এবং Auth user-কে `admins`-এ যোগ করা হয়েছে কি না যাচাই করুন।
-- Website-এর আবেদন WhatsApp খুললেও Dashboard-এ না এলে Supabase connection, browser console এবং `applications` table-এর RLS policy পরীক্ষা করুন।
-
-## বর্তমান ফাইলের অবস্থা
-
-এই ZIP-এ Project URL আগে থেকেই দেওয়া আছে, কিন্তু `anonKey` ফাঁকা। তাই আপনার Supabase Dashboard থেকে সঠিক public key না বসানো পর্যন্ত CMS/Admin সংযোগ সম্পূর্ণ হবে না। Admin email-ও আপনার নিজের ইমেইল দিয়ে SQL-এ বসাতে হবে।
+## সমস্যা হলে
+- **“অ্যাডমিন অনুমতি নেই”**: ধাপ ২-এর শেষ লাইনের ইমেইল ও ধাপ ৩-এর ইউজারের ইমেইল হুবহু এক কিনা দেখুন।
+- **প্রিভিউ খোলে না**: প্যানেল সাইটের https ঠিকানা থেকে খুলুন, কম্পিউটারের ফাইল থেকে নয়।
+- **সেভ/আপলোড ব্যর্থ**: SQL Editor-এ `schema.sql` পুরো চলেছে কিনা দেখুন।
+- **সাইটে পুরনো লেখা**: প্রকাশ করেছেন কিনা দেখুন। ব্রাউজারে Ctrl+Shift+R চাপুন।
