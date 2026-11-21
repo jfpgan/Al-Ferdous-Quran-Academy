@@ -9,5 +9,5 @@ window.AF_LINKS = {
   facebook:  "https://www.facebook.com/profile.php?id=61595076327397",
   instagram: "https://www.instagram.com/alferdousquranacademy/",
   youtube:   "https://www.youtube.com/@AlFerdousQuranAcademy",
-  gmail:     "mailto:alferdousquranacademy.info@gmail.com"
+  gmail:     "https://mail.google.com/mail/?view=cm&fs=1&to=alferdousquranacademy.info@gmail.com"
 };
